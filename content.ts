@@ -106,9 +106,12 @@ class AutonateController {
     }
 
     private preRenderOverlay() {
+        this.overlayCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
         this.overlayCtx.drawImage(this.originalImage, 0, 0, window.innerWidth, window.innerHeight);
 
-        if (this.blurRadius > 0) {
+        const shouldBlur = this.blurRadius > 0 && !(this.shape === 'custom-box' && !this.isLocked);
+
+        if (shouldBlur) {
             const tempCtx = this.overlayCanvas.getContext('2d')!;
             tempCtx.save();
             tempCtx.filter = `blur(${this.blurRadius}px)`;
@@ -298,6 +301,10 @@ class AutonateController {
             this.lockPos = { ...this.mousePos };
         }
 
+        if (this.shape === 'custom-box') {
+            this.preRenderOverlay();
+        }
+
         this.canvas.style.cursor = 'default';
 
         // Redraw locked frame
@@ -369,7 +376,7 @@ class AutonateController {
 
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${viewBoxSize}" height="${viewBoxSize}" viewBox="0 0 ${viewBoxSize} ${viewBoxSize}">${svgContent}</svg>`;
         const encoded = btoa(unescape(encodeURIComponent(svg)));
-        this.canvas.style.cursor = `url('data:image/svg+xml;base66,${encoded}') ${center} ${center}, crosshair`;
+        this.canvas.style.cursor = `url('data:image/svg+xml;base64,${encoded}') ${center} ${center}, crosshair`;
     }
 
     // ----------------------------------------------------------------------

@@ -1027,11 +1027,11 @@ class AutonateController {
 // ----------------------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((request: any, sender: any, sendResponse: any) => {
-    if (request.action === "START_CAPTURE" && request.dataUrl) {
+    if (request.action === "INIT_AUTONATE" && request.payload) {
         if ((window as any).autonateInstance) {
             (window as any).autonateInstance.cleanup();
         }
-        (window as any).autonateInstance = new AutonateController(request.dataUrl);
+        (window as any).autonateInstance = new AutonateController(request.payload);
         sendResponse({ success: true });
     }
 });

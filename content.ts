@@ -836,6 +836,11 @@ class AutonateController {
             this.toolPalette!.appendChild(btn);
         });
 
+        // Block all mouse interactions from bleeding through the UI to the Canvas behind it.
+        this.toolPalette.addEventListener('mousedown', (e) => e.stopPropagation());
+        this.toolPalette.addEventListener('mouseup', (e) => e.stopPropagation());
+        this.toolPalette.addEventListener('click', (e) => e.stopPropagation());
+
         document.body.appendChild(this.toolPalette);
     }
 
@@ -888,7 +893,7 @@ class AutonateController {
         textArea.style.padding = '4px 8px';
         textArea.style.margin = '0';
         textArea.style.outline = 'none';
-        textArea.style.resize = 'both';
+        textArea.style.resize = 'none';
         textArea.style.overflow = 'hidden';
         textArea.style.whiteSpace = 'pre-wrap';
         textArea.style.wordBreak = 'break-word';
@@ -900,21 +905,109 @@ class AutonateController {
         if (existingModel) {
             textArea.innerText = existingModel.text || '';
             textArea.style.width = `${existingModel.textWidth}px`;
-            textArea.style.height = `${existingModel.textHeight}px`;
+            textArea.style.height = 'auto'; // ensure dynamic vertical layout
         } else {
             textArea.style.minWidth = '50px';
-            textArea.style.minHeight = `${fontSize + 10}px`;
         }
 
-        textArea.style.maxWidth = `${window.innerWidth - x - 20}px`;
+        textArea.style.maxWidth = `${window.innerWidth - 20}px`;
         textArea.style.maxHeight = `${window.innerHeight - y - 20}px`;
         textArea.style.pointerEvents = 'auto';
 
         this.canvas.style.pointerEvents = 'none';
         this.activeTextArea = textArea;
 
+        // --- Custom Resize Handles for Dual-Edge Expansion ---
+        const createHandle = (isLeft: boolean) => {
+            const h = document.createElement('div');
+            h.style.position = 'fixed';
+            h.style.cursor = 'ew-resize';
+            h.style.width = '12px';
+            h.style.zIndex = '2147483648';
+            h.style.background = 'rgba(6, 182, 212, 0.4)';
+            h.style.opacity = '0';
+            h.style.transition = 'opacity 0.2s';
+
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+            let startLeft = 0;
+
+            h.onmouseenter = () => h.style.opacity = '1';
+            h.onmouseleave = () => { if (!isResizing) h.style.opacity = '0'; };
+
+            const onMove = (e: MouseEvent) => {
+                if (!isResizing) return;
+                const dx = e.clientX - startX;
+                if (isLeft) {
+                    const newWidth = Math.max(50, startWidth - dx);
+                    const actualDx = startWidth - newWidth;
+                    textArea.style.width = `${newWidth}px`;
+                    textArea.style.left = `${startLeft - actualDx}px`;
+                } else {
+                    const newWidth = Math.max(50, startWidth + dx);
+                    textArea.style.width = `${newWidth}px`;
+                }
+            };
+
+            const onUp = () => {
+                if (isResizing) {
+                    isResizing = false;
+                    h.style.opacity = '0';
+                    textArea.focus(); // maintain focus after resize
+                }
+            };
+
+            h.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                h.style.opacity = '1';
+                startX = e.clientX;
+                const rect = textArea.getBoundingClientRect();
+                startWidth = rect.width;
+                startLeft = rect.left;
+                e.preventDefault();
+            });
+
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+
+            return {
+                el: h,
+                cleanup: () => {
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onUp);
+                    h.remove();
+                }
+            };
+        };
+
+        const leftH = createHandle(true);
+        const rightH = createHandle(false);
+
+        const updateHandles = () => {
+            if (!textArea.parentElement) return;
+            const r = textArea.getBoundingClientRect();
+            leftH.el.style.left = `${r.left - 6}px`;
+            leftH.el.style.top = `${r.top}px`;
+            leftH.el.style.height = `${r.height}px`;
+
+            rightH.el.style.left = `${r.right - 6}px`;
+            rightH.el.style.top = `${r.top}px`;
+            rightH.el.style.height = `${r.height}px`;
+        };
+
+        const ro = new ResizeObserver(updateHandles);
+        ro.observe(textArea);
+        document.body.appendChild(leftH.el);
+        document.body.appendChild(rightH.el);
+
         const finalize = () => {
             if (!textArea.parentElement) return;
+
+            leftH.cleanup();
+            rightH.cleanup();
+            ro.disconnect();
+
             const text = textArea.innerText;
             const rect = textArea.getBoundingClientRect();
 

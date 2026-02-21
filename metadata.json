@@ -1,0 +1,7 @@
+{
+  "name": "Autonate",
+  "description": "A focused screen capture and annotation tool.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

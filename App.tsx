@@ -6,7 +6,7 @@ const App: React.FC = () => {
   const [shape, setShape] = useState<ShapeType>(ShapeType.CIRCLE);
   const [blur, setBlur] = useState<number>(8);
   const [defaultAction, setDefaultAction] = useState<'save' | 'copy'>('copy');
-  const [paletteScale, setPaletteScale] = useState<number>(0.5);
+  const [paletteScale, setPaletteScale] = useState<number>(0.75);
 
   const [shortcutText, setShortcutText] = useState<string>('');
 

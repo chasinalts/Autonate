@@ -23,8 +23,8 @@
   "commands": {
     "take_screenshot": {
       "suggested_key": {
-        "default": "Ctrl+Shift+S",
-        "mac": "Command+Shift+S"
+        "default": "Alt+S",
+        "mac": "Alt+S"
       },
       "description": "Trigger Autonate Capture"
     }

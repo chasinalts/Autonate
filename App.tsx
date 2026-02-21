@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { ShapeType } from './types';
-import { Camera, Square, Circle, RectangleHorizontal, Keyboard } from 'lucide-react';
+import { Camera, Square, Circle, RectangleHorizontal, Keyboard, BoxSelect } from 'lucide-react';
 
 const App: React.FC = () => {
   const [shape, setShape] = useState<ShapeType>(ShapeType.CIRCLE);
   const [blur, setBlur] = useState<number>(8);
   const [defaultAction, setDefaultAction] = useState<'save' | 'copy'>('copy');
+  const [paletteScale, setPaletteScale] = useState<number>(0.5);
 
   const [shortcutText, setShortcutText] = useState<string>('');
 
   // Load saved preferences and commands on mount
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(['autonateShape', 'autonateBlur', 'autonateDefaultAction'], (result: any) => {
+      chrome.storage.local.get(['autonateShape', 'autonateBlur', 'autonateDefaultAction', 'autonatePaletteScale'], (result: any) => {
         if (result.autonateShape) {
           setShape(result.autonateShape as ShapeType);
         }
@@ -21,6 +22,9 @@ const App: React.FC = () => {
         }
         if (result.autonateDefaultAction) {
           setDefaultAction(result.autonateDefaultAction);
+        }
+        if (result.autonatePaletteScale !== undefined) {
+          setPaletteScale(result.autonatePaletteScale);
         }
       });
     }
@@ -37,7 +41,7 @@ const App: React.FC = () => {
     } else {
       // Dev mode fallback
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      setShortcutText(isMac ? '⌘+Shift+S' : 'Ctrl+Shift+S');
+      setShortcutText(isMac ? '⌥+S' : 'Alt+S');
     }
   }, []);
 
@@ -59,6 +63,13 @@ const App: React.FC = () => {
     setDefaultAction(action);
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set({ autonateDefaultAction: action });
+    }
+  };
+
+  const handleScaleChange = (newScale: number) => {
+    setPaletteScale(newScale);
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ autonatePaletteScale: newScale });
     }
   };
 
@@ -122,6 +133,17 @@ const App: React.FC = () => {
               <RectangleHorizontal size={20} />
               <span className="text-[10px] mt-1">Rect</span>
             </button>
+            <button
+              onClick={() => handleShapeChange(ShapeType.CUSTOM_BOX)}
+              title="Select Custom Box Focus Shape"
+              className={`flex-1 flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${shape === ShapeType.CUSTOM_BOX
+                ? 'bg-cyan-900/50 border-cyan-500 text-cyan-400'
+                : 'bg-slate-800 border-slate-700 text-slate-500 hover:bg-slate-750'
+                }`}
+            >
+              <BoxSelect size={20} />
+              <span className="text-[10px] mt-1">Custom</span>
+            </button>
           </div>
         </div>
 
@@ -140,6 +162,24 @@ const App: React.FC = () => {
             onChange={(e) => handleBlurChange(parseInt(e.target.value))}
             className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             title="Adjust background blur strength"
+          />
+        </div>
+
+        {/* Palette Size Slider */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-semibold text-slate-300">Palette Size</label>
+            <span className="text-xs font-mono text-cyan-400 bg-cyan-900/30 px-2 py-0.5 rounded">{Math.round(paletteScale * 100)}%</span>
+          </div>
+          <input
+            type="range"
+            min="0.3"
+            max="1.5"
+            step="0.1"
+            value={paletteScale}
+            onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
+            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            title="Adjust the interface size of the tools menu"
           />
         </div>
 

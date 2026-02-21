@@ -1,7 +1,8 @@
 export enum ShapeType {
   CIRCLE = 'circle',
   SQUARE = 'square',
-  RECTANGLE = 'rectangle'
+  RECTANGLE = 'rectangle',
+  CUSTOM_BOX = 'custom-box'
 }
 
 export interface AppState {
